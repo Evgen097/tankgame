@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tank Game</title>
+    <style>
+        body{
+            background-color: beige;
+        }
+
+        #game{
+            position: relative;
+        }
+
+        #field{
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            margin: 20px  100px 100px 100px;
+            background-color: darkgrey;
+        }
+        #tank{
+            position: absolute;
+            left: 100px;
+            top: 100px;
+            width: 60px;
+            height: 60px;
+            background-color: dimgray;
+            /*border: 2px solid deepskyblue;*/
+            border-radius: 7px 7px 7px 7px;
+        }
+
+        #tower{
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            width: 40px;
+            height: 40px;
+            background-color: blue;
+            border: 2px solid black;
+            transform: rotate(45deg);
+            transform-origin: 50% 50%;
+
+          }
+        #barrel{
+            position: absolute;
+            left: 12px;
+            top: -20px;
+            width: 16px;
+            height: 40px;
+            background-color: dimgray;
+            border: 1px solid black;
+            border-radius: 3px 3px 7px 7px;
+        }
+        .bullet{
+            position: absolute;
+            left: 22px;
+            top: 22px;
+            width: 16px;
+            height: 16px;
+            background-color: yellow;
+            border-radius: 50% 50% 50% 50%;
+            /*opacity: 0.7;*/
+            /*transform: rotate(45deg);*/
+        }
+        #sight{
+            margin: -16px  -0px -0px -0px;
+
+            width: 16px;
+            height: 16px;
+            /*background-color: fuchsia;*/
+            /*border-radius: 50% 50% 50% 50%;*/
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div id="game"> Tank Game Score 000
+    <div id="field">
+        <div id="tank">
+            <div id="tower">
+                <div id="barrel">
+                    <div id="sight"></div>
+                </div>
+            </div>
+            <!--<div class="bullet"></div>-->
+        </div>
+    </div>
+</div>
+
+
+<script>
+    window.onload = function() {
+        var tank;
+        var game;
+        var bullet;
+
+    class Tank{
+        constructor(){
+            this.tower = document.querySelector('#tower');
+            this.sight = document.querySelector('#sight');
+            this.towerAngel = 45;
+            this.rtStep = 6;
+            this.init()
+        }
+
+        init(){
+            this.tower.style.transform = `rotate(${this.towerAngel}deg)`;
+            addEventListener("keydown", this.handleKeydown.bind(this));
+        }
+
+        handleKeydown(e){
+            switch(e.keyCode){
+                case 37:  // если нажата клавиша влево
+                    this.rotate(-this.rtStep);
+                    break;
+                case 38:   // если нажата клавиша вверх
+                    this.rotate(this.rtStep);
+                    break;
+                case 39:   // если нажата клавиша вправо
+                    this.rotate(this.rtStep);
+                    break;
+                case 40:   // если нажата клавиша вниз
+                    this.rotate(-this.rtStep);
+                    break;
+            }
+        }
+
+
+        get angleOfRotation(){
+            return parseInt(this.tower.style.transform.replace(/[^\d.]/g, ''));
+        }
+
+        rotate(angle=1){
+            var rotate = this.angleOfRotation + angle;
+            if(rotate < 0) rotate = 360;
+            if(rotate > 360) rotate = 0;
+            this.tower.style.transform = `rotate(${rotate}deg)`;
+            this.tower.style.transform = `rotate(${rotate}deg)`;
+        }
+
+        get sightCoordXY(){
+            var x = this.sight.getBoundingClientRect().left;
+            var y = this.sight.getBoundingClientRect().top;
+            return {x, y}
+        }
+
+
+    };
+
+    class Bullet{
+        constructor(){
+            this.tank = document.querySelector('#tank');
+            this.bullet = '';
+            this.bulletAngle = tank.towerAngel;
+
+            this.vx = '';
+            this.vy = '';
+            this.shotRange = 100;
+
+            this.field = {
+                right: document.querySelector('#field').getBoundingClientRect().right,
+                bottom: document.querySelector('#field').getBoundingClientRect().bottom
+            }
+            this.init();
+        }
+
+        init(){
+            this.create();
+            this.appendToDOM();
+            this.vector();
+            this.moveToBarrel();
+        }
+
+        create(){
+            var div = document.createElement('div');
+            div.className = 'bullet';
+            div.style.transform = `rotate(${this.bulletAngle}deg)`;
+            this.bullet = div;
+        }
+
+        appendToDOM(){
+            this.tank.appendChild(this.bullet)
+        }
+
+        rotate(angle){
+            this.bullet.style.transform = `rotate(${angle}deg)`;
+        }
+
+        get coordXY(){
+            var x = this.bullet.getBoundingClientRect().left;
+            var y = this.bullet.getBoundingClientRect().top;
+            return {x, y}
+        }
+
+        vector(){
+            if(!this.vx || !this.vy){
+                // console.log('tank sightCoordXY coord: ')
+                // console.log(tank.sightCoordXY)
+
+                // console.log('bullet coord: ')
+                // console.log(this.coordXY)
+
+                this.vx = (tank.sightCoordXY.x - this.coordXY.x);
+                this.vy = (tank.sightCoordXY.y - this.coordXY.y);
+                // console.log('vx: ', this.vx, '    vy: ', this.vy)
+
+            }
+        }
+        moveToBarrel(){
+            var x = parseFloat(getComputedStyle(this.bullet).left);
+            var y = parseFloat(getComputedStyle(this.bullet).top);
+            this.bullet.style.left = (x + this.vx) + 'px';
+            this.bullet.style.top = (y + this.vy) + 'px';
+        }
+
+        move(){
+            // var x = parseFloat(getComputedStyle(this.bullet).left);
+            // var y = parseFloat(getComputedStyle(this.bullet).top);
+            // // console.log(this.coordXY.x, this.coordXY.y)
+            // if((this.coordXY.x < 0 || this.coordXY.y < 0) ||
+            //     (this.coordXY.x > this.field.right || this.coordXY.y > this.field.bottom) ){
+            //     this.bullet.parentNode.removeChild(this.bullet);
+            //     return false;
+            // }else {
+            //     this.bullet.style.left = (x + this.vx/5) + 'px';
+            //     this.bullet.style.top = (y + this.vy/5) + 'px';
+            //     return true
+            // }
+
+            var x = parseFloat(getComputedStyle(this.bullet).left);
+            var y = parseFloat(getComputedStyle(this.bullet).top);
+                this.bullet.style.left = (x + this.vx/5) + 'px';
+                this.bullet.style.top = (y + this.vy/5) + 'px';
+
+        }
+
+
+    };
+
+    class Game{
+        constructor(){
+            this.tank = tank;
+            this.bullets = [];
+            this.field = {
+                right: document.querySelector('#field').getBoundingClientRect().right,
+                bottom: document.querySelector('#field').getBoundingClientRect().bottom
+            }
+            this.init();
+        }
+
+        init(){
+            this.bullets.push(new Bullet())
+            var time = 30;
+            var timerId, timerId2;
+
+            var tick = ()=> {
+                this.moveBullets();
+                setTimeout(tick, time)
+            };
+            timerId = setTimeout(tick, time);
+
+            var tick2 = ()=> {
+                this.bullets.push(new Bullet())
+                console.log(this.bullets.length)
+                setTimeout(tick2, 200)
+            };
+            timerId2 = setTimeout(tick2, 1000);
+
+        }
+
+        moveBullets() {
+            var tempBullets = [];
+            this.bullets.forEach(bullet => {
+                bullet.move()
+                if((bullet.coordXY.x < 0 || bullet.coordXY.y < 0) ||
+                    (bullet.coordXY.x > this.field.right || bullet.coordXY.y > this.field.bottom) ){
+                    bullet.bullet.parentNode.removeChild(bullet.bullet);
+                    tempBullets.push(bullet)
+                }
+            })
+
+            this.bullets = this.bullets.filter(bullet => !tempBullets.includes(bullet));
+
+
+            // var tempBullets = [];
+            //
+            // this.bullets.forEach(bullet => {
+            //     var move = bullet.move()
+            //     if (!move) tempBullets.push(bullet);
+            // })
+            //
+            // this.bullets = this.bullets.filter(bullet => {
+            //     if(!tempBullets.includes(bullet)) return true;
+            //     return false
+            // });
+        }
+
+        deletBullets(){
+            this.bullets = this.bullets.filter( bullet=>{
+
+                if((bullet.coordXY.x < 0 || bullet.coordXY.y < 0) ||
+                    (bullet.coordXY.x > this.field.right-10 || bullet.coordXY.y > this.field.bottom) ){
+                    return false
+                }
+                return true;
+            } )
+        }
+
+    }
+
+    tank = new Tank();
+
+    var game = new Game();
+
+
+    // var tank = new Tank();
+    // var bullet = new Bullet();
+    // console.log(bullet.coordXY)
+
+
+
+
+
+
+    // setInterval(() => {
+    //     new Bullet();
+    // }, 300)
+
+
+
+    }
+
+</script>
+</body>
+</html>
