@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Tank Game</title>
+    <link rel="stylesheet" href="./emoji.css">
     <style>
         body{
             background-color: beige;
@@ -18,16 +19,29 @@
             height: 500px;
             margin: 20px  100px 100px 100px;
             background-color: darkgrey;
+            overflow: hidden;
         }
         #tank{
             position: absolute;
-            left: 100px;
-            top: 100px;
+            left: 200px;
+            top: 200px;
             width: 60px;
             height: 60px;
             background-color: dimgray;
             /*border: 2px solid deepskyblue;*/
             border-radius: 7px 7px 7px 7px;
+            /*animation: redblinking 1s infinite linear;*/
+        }
+        @keyframes redblinking {
+            0% {
+                background-color: dimgray;
+            }
+            50% {
+                background-color: red;
+            }
+            100% {
+                background-color: dimgray;
+            }
         }
 
         #tower{
@@ -40,7 +54,6 @@
             border: 2px solid black;
             transform: rotate(45deg);
             transform-origin: 50% 50%;
-
           }
         #barrel{
             position: absolute;
@@ -65,11 +78,30 @@
         }
         #sight{
             margin: -16px  -0px -0px -0px;
-
             width: 16px;
             height: 16px;
             /*background-color: fuchsia;*/
             /*border-radius: 50% 50% 50% 50%;*/
+        }
+
+        .buddy{
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 72px;
+            height: 72px;
+            /*background-color: yellow;*/
+            /*border-radius: 50% 50% 50% 50%;*/
+        }
+
+        #life{
+            position: relative;
+
+            width: 200px;
+            height: 20px;
+            background-color: lawngreen;
+            /*border: 1px solid black;*/
+            border-radius: 7px 7px 7px 7px;
         }
 
     </style>
@@ -77,7 +109,11 @@
 
 <body>
 
-<div id="game"> Tank Game Score 000
+<div id="game"> <div>Tank Game </div>
+    <div id="life"></div>Score: <span id="score"></span>
+    <div id="btnstart">Start Game</div>
+
+
     <div id="field">
         <div id="tank">
             <div id="tower">
@@ -87,6 +123,7 @@
             </div>
             <!--<div class="bullet"></div>-->
         </div>
+        <!--<div class="buddy em em-robot_face"></div>-->
     </div>
 </div>
 
@@ -99,33 +136,51 @@
 
     class Tank{
         constructor(){
+            this.tank = document.querySelector('#tank')
             this.tower = document.querySelector('#tower');
             this.sight = document.querySelector('#sight');
             this.towerAngel = 45;
             this.rtStep = 6;
+            this.moveStep = 6;
+            this.field = {
+                right: document.querySelector('#field').getBoundingClientRect().right,
+                bottom: document.querySelector('#field').getBoundingClientRect().bottom,
+                left: document.querySelector('#field').getBoundingClientRect().left,
+                top: document.querySelector('#field').getBoundingClientRect().top
+            }
+            this.keysdown = [];
+            this.allowedButtons = [37, 38, 39, 40, 87, 68, 83, 65];
             this.init()
         }
 
         init(){
             this.tower.style.transform = `rotate(${this.towerAngel}deg)`;
             addEventListener("keydown", this.handleKeydown.bind(this));
+            addEventListener("keyup", this.handleKeyup.bind(this));
         }
 
         handleKeydown(e){
-            switch(e.keyCode){
-                case 37:  // если нажата клавиша влево
-                    this.rotate(-this.rtStep);
-                    break;
-                case 38:   // если нажата клавиша вверх
-                    this.rotate(this.rtStep);
-                    break;
-                case 39:   // если нажата клавиша вправо
-                    this.rotate(this.rtStep);
-                    break;
-                case 40:   // если нажата клавиша вниз
-                    this.rotate(-this.rtStep);
-                    break;
-            }
+            if (this.allowedButtons.includes(e.keyCode) &&
+                !this.keysdown.includes(e.keyCode)) {
+                this.keysdown.push(e.keyCode)
+            };
+        }
+        handleKeyup(e){
+            var index = this.keysdown.indexOf(e.keyCode);
+            if (index !== -1) this.keysdown.splice(index, 1);
+        }
+
+
+        tankMover(){
+            if (this.keysdown.includes(37)) this.rotate(-this.rtStep);
+            if (this.keysdown.includes(38)) this.rotate(this.rtStep);
+            if (this.keysdown.includes(39)) this.rotate(this.rtStep);
+            if (this.keysdown.includes(40)) this.rotate(-this.rtStep);
+
+            if (this.keysdown.includes(87)) this.move(0, -this.moveStep);
+            if (this.keysdown.includes(68)) this.move(this.moveStep, 0);
+            if (this.keysdown.includes(83)) this.move(0, this.moveStep);
+            if (this.keysdown.includes(65)) this.move(-this.moveStep, 0);
         }
 
 
@@ -138,7 +193,7 @@
             if(rotate < 0) rotate = 360;
             if(rotate > 360) rotate = 0;
             this.tower.style.transform = `rotate(${rotate}deg)`;
-            this.tower.style.transform = `rotate(${rotate}deg)`;
+            this.towerAngel = rotate;
         }
 
         get sightCoordXY(){
@@ -147,7 +202,30 @@
             return {x, y}
         }
 
+        get coordXY(){
+            var x = this.sight.getBoundingClientRect().left;
+            var y = this.sight.getBoundingClientRect().top;
+            return {x, y}
+        }
 
+        get tankCoordXY(){
+            var x = this.tank.getBoundingClientRect().left;
+            var y = this.tank.getBoundingClientRect().top;
+            var right = this.tank.getBoundingClientRect().right;
+            var bottom = this.tank.getBoundingClientRect().bottom;
+            return {x, y, right, bottom}
+        }
+
+        move(vx, vy){
+            var x = parseFloat(getComputedStyle(this.tank).left);
+            var y = parseFloat(getComputedStyle(this.tank).top);
+            if( (this.tankCoordXY.x+vx > this.field.left && this.tankCoordXY.x+vx <  this.field.right-62) ){
+                this.tank.style.left = (x + vx) + 'px';
+            };
+            if( (this.tankCoordXY.y+vy > this.field.top && this.tankCoordXY.y+vy <  this.field.bottom-62) ){
+                this.tank.style.top = (y + vy) + 'px';
+            };
+        }
     };
 
     class Bullet{
@@ -158,7 +236,7 @@
 
             this.vx = '';
             this.vy = '';
-            this.shotRange = 100;
+            this.shotRange = 20;
 
             this.field = {
                 right: document.querySelector('#field').getBoundingClientRect().right,
@@ -197,16 +275,8 @@
 
         vector(){
             if(!this.vx || !this.vy){
-                // console.log('tank sightCoordXY coord: ')
-                // console.log(tank.sightCoordXY)
-
-                // console.log('bullet coord: ')
-                // console.log(this.coordXY)
-
                 this.vx = (tank.sightCoordXY.x - this.coordXY.x);
                 this.vy = (tank.sightCoordXY.y - this.coordXY.y);
-                // console.log('vx: ', this.vx, '    vy: ', this.vy)
-
             }
         }
         moveToBarrel(){
@@ -217,97 +287,336 @@
         }
 
         move(){
-            // var x = parseFloat(getComputedStyle(this.bullet).left);
-            // var y = parseFloat(getComputedStyle(this.bullet).top);
-            // // console.log(this.coordXY.x, this.coordXY.y)
-            // if((this.coordXY.x < 0 || this.coordXY.y < 0) ||
-            //     (this.coordXY.x > this.field.right || this.coordXY.y > this.field.bottom) ){
-            //     this.bullet.parentNode.removeChild(this.bullet);
-            //     return false;
-            // }else {
-            //     this.bullet.style.left = (x + this.vx/5) + 'px';
-            //     this.bullet.style.top = (y + this.vy/5) + 'px';
-            //     return true
-            // }
-
             var x = parseFloat(getComputedStyle(this.bullet).left);
             var y = parseFloat(getComputedStyle(this.bullet).top);
-                this.bullet.style.left = (x + this.vx/5) + 'px';
-                this.bullet.style.top = (y + this.vy/5) + 'px';
-
+            this.bullet.style.left = (x + this.vx/5) + 'px';
+            this.bullet.style.top = (y + this.vy/5) + 'px';
+            this.shotRange -= 1;
         }
 
 
     };
 
+    class Buddy{
+            constructor(){
+                this.field = document.querySelector('#field')
+                this.buddy = '';
+                this.fieldSize = {
+                    right: document.querySelector('#field').getBoundingClientRect().right,
+                    bottom: document.querySelector('#field').getBoundingClientRect().bottom,
+                    left: document.querySelector('#field').getBoundingClientRect().left,
+                    top: document.querySelector('#field').getBoundingClientRect().top
+                };
+                this.emojis = ['em-alien', 'em-robot_face', 'em-smiling_imp', 'em-space_invader', 'em-japanese_ogre']
+                this.vx = this.random(1,5);
+                this.vy = this.random(1,6);
+                this.init();
+            }
+
+            init(){
+                this.create();
+                this.appendToDOM();
+                // console.log(this.coordXY)
+                // console.log(this.coordXYComputed)
+            }
+
+            random(min=0, max=10){
+                return Math.floor(Math.random() * max) + min;
+            }
+
+            setStartCoord(){
+                var randomStart = this.random(0, 4);
+                switch (randomStart) {
+                    case 0:
+                        this.buddy.style.left = -80 + 'px';
+                        this.buddy.style.top = this.random(0, this.fieldSize.bottom) + 'px';
+                        break;
+                    case 1:
+                        this.buddy.style.left = this.random(0, this.fieldSize.right) + 'px';
+                        this.buddy.style.top = -80 + 'px';
+                        this.vx = -this.vx;
+                        break;
+                    case 2:
+                        this.buddy.style.left = (this.fieldSize.right-100) + 'px';
+                        this.buddy.style.top = this.random(0, this.fieldSize.bottom) + 'px';
+                        this.vx = -this.vx;
+                        this.vy = -this.vy;
+                        break;
+                    case 3:
+                        this.buddy.style.left = this.random(0, this.fieldSize.right) + 'px';
+                        this.buddy.style.top = (this.fieldSize.bottom-60) + 'px';
+                        this.vx = -this.vx;
+                        this.vy = -this.vy;
+                        break;
+                }
+            }
+
+            create(){
+                var div = document.createElement('div');
+                var emoji = this.emojis[ this.random(0, this.emojis.length-1)    ];
+                div.className = 'buddy ' + emoji;
+                this.buddy = div;
+                this.setStartCoord();
+            }
+
+            appendToDOM(){
+                this.field.appendChild(this.buddy)
+            }
+
+            get coordXY(){
+                var x = this.buddy.getBoundingClientRect().left;
+                var y = this.buddy.getBoundingClientRect().top;
+                var right = this.buddy.getBoundingClientRect().right;
+                var bottom = this.buddy.getBoundingClientRect().bottom;
+                return {x, y, right, bottom}
+            }
+
+            get coordXYComputed(){
+                var x = parseFloat(getComputedStyle(this.buddy).left);
+                var y = parseFloat(getComputedStyle(this.buddy).top);
+                return {x, y}
+            }
+
+            vector(){
+                if(!this.vx || !this.vy){
+                    this.vx = (tank.sightCoordXY.x - this.coordXY.x);
+                    this.vy = (tank.sightCoordXY.y - this.coordXY.y);
+                }
+            }
+
+            move(){
+                var x = parseFloat(getComputedStyle(this.buddy).left);
+                var y = parseFloat(getComputedStyle(this.buddy).top);
+                this.buddy.style.left = (x + this.vx) + 'px';
+                this.buddy.style.top = (y + this.vy) + 'px';
+                // this.buddy.style.left = 200 + 'px';
+                // this.buddy.style.top = 200 + 'px';
+            }
+        };
+
+
     class Game{
         constructor(){
+            this.play = false;
+            this.score = document.querySelector('#score');
+            this.scores = 0;
+            this.life = document.querySelector('#life');
+            this.lifes = 10;
             this.tank = tank;
+            this.tankRed = false;
+            this.btnStart =  document.querySelector('#btnstart');
             this.bullets = [];
             this.field = {
                 right: document.querySelector('#field').getBoundingClientRect().right,
-                bottom: document.querySelector('#field').getBoundingClientRect().bottom
+                bottom: document.querySelector('#field').getBoundingClientRect().bottom,
+                left: document.querySelector('#field').getBoundingClientRect().left,
+                top: document.querySelector('#field').getBoundingClientRect().top
             }
+            this.keysdown = [];
+            this.allowedButtons = [32];
+            this.bulletsDeley = 5;
+            this.buddyes = [];
+            this.buddyesNumber = 10;
             this.init();
         }
 
         init(){
-            this.bullets.push(new Bullet())
-            var time = 30;
-            var timerId, timerId2;
-
-            var tick = ()=> {
-                this.moveBullets();
-                setTimeout(tick, time)
-            };
-            timerId = setTimeout(tick, time);
-
-            var tick2 = ()=> {
-                this.bullets.push(new Bullet())
-                console.log(this.bullets.length)
-                setTimeout(tick2, 200)
-            };
-            timerId2 = setTimeout(tick2, 1000);
-
+            addEventListener("keydown", this.handleKeydown.bind(this));
+            addEventListener("keyup", this.handleKeyup.bind(this));
+            this.btnStart.addEventListener("click", this.startGame.bind(this));
         }
+
+        startGame(){
+            var timerId;
+            var tick = ()=> {
+                if(!this.play) return;
+
+                this.moveBuddyes();
+                this.addBullet();
+                this.moveBullets();
+                this.checkTankCollision();
+                this.tank.tankMover();
+
+                setTimeout(tick, 30);
+            };
+
+            if(!this.play) {
+                this.createBuddyes(this.buddyesNumber);
+                this.scores = 0;
+                this.score.innerHTML = this.scores;
+                this.lifes = 10;
+                this.life.style.width = this.lifes * 20 + 'px';
+                this.play = true;
+
+                timerId = setTimeout(tick, 30)
+            };
+        }
+
+        gameOver(){
+            this.play = false;
+
+            var bullets = Array.from(document.querySelectorAll('.bullet'))
+            bullets.forEach(bull => {bull.parentNode.removeChild(bull);});
+            this.bullets =[];
+
+            var buddyes = Array.from(document.querySelectorAll('.buddy'))
+            buddyes.forEach(buddy => {buddy.parentNode.removeChild(buddy);});
+            this.buddyes =[];
+
+            this.tank.tank.style.left = '200px';
+            this.tank.tank.style.top = '200px';
+        }
+
+        handleKeydown(e){
+            if (this.allowedButtons.includes(e.keyCode) &&
+                !this.keysdown.includes(e.keyCode)) {
+                this.keysdown.push(e.keyCode)
+            };
+        }
+        handleKeyup(e){
+            if (this.allowedButtons.includes(e.keyCode)){
+                var index = this.keysdown.indexOf(e.keyCode);
+                if (index !== -1) this.keysdown.splice(index, 1);
+
+                if (e.keyCode === 32) this.bulletsDeley = 0;
+            };
+        }
+
+        addBullet(){
+            if (this.keysdown.includes(32)) {
+                if (this.bulletsDeley > 0) {
+                    this.bulletsDeley -=1;
+                }else {
+                    this.bulletsDeley = 5;
+                    this.bullets.push(new Bullet());
+                }
+            };
+        }
+
 
         moveBullets() {
             var tempBullets = [];
+            var tempBuddyes = [];
             this.bullets.forEach(bullet => {
-                bullet.move()
-                if((bullet.coordXY.x < 0 || bullet.coordXY.y < 0) ||
+                bullet.move();
+                // console.log(bullet.shotRange);
+                if((bullet.coordXY.x < this.field.left || bullet.coordXY.y < this.field.top) ||
                     (bullet.coordXY.x > this.field.right || bullet.coordXY.y > this.field.bottom) ){
-                    bullet.bullet.parentNode.removeChild(bullet.bullet);
+                    tempBullets.push(bullet)
+                }else if(bullet.shotRange < 0){
                     tempBullets.push(bullet)
                 }
             })
+            if(tempBullets.length) this.deletBullets(tempBullets)
 
-            this.bullets = this.bullets.filter(bullet => !tempBullets.includes(bullet));
-
-
-            // var tempBullets = [];
-            //
-            // this.bullets.forEach(bullet => {
-            //     var move = bullet.move()
-            //     if (!move) tempBullets.push(bullet);
-            // })
-            //
-            // this.bullets = this.bullets.filter(bullet => {
-            //     if(!tempBullets.includes(bullet)) return true;
-            //     return false
-            // });
+            tempBullets = [];
+            tempBuddyes = [];
+            this.bullets.forEach(bullet => {
+                this.buddyes.forEach((buddy)=>{
+                    var temp = this.checkCollision(bullet, buddy);
+                    if (temp.length){
+                        if(!tempBullets.includes(temp[0])) tempBullets.push(temp[0]);
+                        if(!tempBuddyes.includes(temp[1])) tempBuddyes.push(temp[1]);
+                    }
+                })
+            })
+            if(tempBullets.length) this.deletBullets(tempBullets)
+            if(tempBuddyes.length) this.deleteBuddyes(tempBuddyes);
         }
 
-        deletBullets(){
-            this.bullets = this.bullets.filter( bullet=>{
 
-                if((bullet.coordXY.x < 0 || bullet.coordXY.y < 0) ||
-                    (bullet.coordXY.x > this.field.right-10 || bullet.coordXY.y > this.field.bottom) ){
-                    return false
+        checkCollision(bullet, buddy){
+            if( (((bullet.coordXY.x+8) > buddy.coordXY.x) &&  ((bullet.coordXY.x+8) < buddy.coordXY.right)) &&
+                (((bullet.coordXY.y+8) > buddy.coordXY.y) &&  ((bullet.coordXY.y+8) < buddy.coordXY.bottom))
+            ){  this.updateScore(1);
+                return [bullet, buddy]
+            }else {
+                return []
+            }
+        }
+
+        checkTankCollision(){
+
+            this.buddyes.forEach( buddy =>{
+                if(
+                    ( ((this.tank.tankCoordXY.x < buddy.coordXY.x) &&  (this.tank.tankCoordXY.right > buddy.coordXY.x)) &&
+                    ((this.tank.tankCoordXY.y < buddy.coordXY.y) &&  (this.tank.tankCoordXY.bottom > buddy.coordXY.y)) )
+                    ||
+                    ( ((this.tank.tankCoordXY.right > buddy.coordXY.x) &&  (this.tank.tankCoordXY.right < buddy.coordXY.right)) &&
+                    ((this.tank.tankCoordXY.y > buddy.coordXY.y) &&  (this.tank.tankCoordXY.y < buddy.coordXY.bottom)) )
+                    ||
+                    ( ((this.tank.tankCoordXY.x > buddy.coordXY.x) &&  (this.tank.tankCoordXY.x < buddy.coordXY.right)) &&
+                    ((this.tank.tankCoordXY.bottom > buddy.coordXY.y) &&  (this.tank.tankCoordXY.bottom < buddy.coordXY.bottom)) )
+                    ||
+                    ( ((this.tank.tankCoordXY.x > buddy.coordXY.x) &&  (this.tank.tankCoordXY.x < buddy.coordXY.right)) &&
+                    ((this.tank.tankCoordXY.y > buddy.coordXY.y) &&  (this.tank.tankCoordXY.y < buddy.coordXY.bottom)) )
+                ){
+                    this.updateLife(-1);
                 }
-                return true;
             } )
         }
+
+
+
+        deletBullets(tempBullets){
+            tempBullets.forEach(bullet => {
+                bullet.bullet.parentNode.removeChild(bullet.bullet);
+            });
+            this.bullets = this.bullets.filter(bullet => !tempBullets.includes(bullet));
+        }
+
+        createBuddyes(num){
+            for(var i=0; i<num; i++){
+                this.buddyes.push(new Buddy())
+            }
+        }
+
+        moveBuddyes(){
+            var tempBuddyes = [];
+            this.buddyes.forEach( buddy =>{
+                buddy.move()
+                if((buddy.coordXY.x < (this.field.left-100) || buddy.coordXY.y < (this.field.top-100) ||
+                    (buddy.coordXY.x > (this.field.right+100)) || buddy.coordXY.y > (this.field.bottom+50)) ){
+                    tempBuddyes.push(buddy)
+                }
+            })
+            if(tempBuddyes.length) {
+                this.deleteBuddyes(tempBuddyes)
+            }
+        }
+
+
+        deleteBuddyes(tempBuddyes){
+            tempBuddyes.forEach(buddy => {
+                if(buddy.buddy && buddy.buddy.parentNode) buddy.buddy.parentNode.removeChild(buddy.buddy);
+            });
+            this.buddyes = this.buddyes.filter(buddy => !tempBuddyes.includes(buddy));
+            this.createBuddyes(tempBuddyes.length)
+        }
+
+        updateScore(num=1){
+            this.scores += num;
+            this.score.innerHTML = this.scores;
+        }
+
+
+        updateLife(num=-1) {
+            if(!this.tankRed){
+                this.tankRed = true;
+                this.lifes += num;
+                this.life.style.width = this.lifes * 20 + 'px';
+                if(this.lifes < 4) this.life.style.backgroundColor = 'red';
+                this.tank.tank.style.animation = 'redblinking 0.2s infinite linear';
+
+                setTimeout( ()=>{
+                    this.tankRed = false;
+                    this.tank.tank.style.animation = '';
+                },1000 );
+
+                if(this.lifes <=0) this.gameOver();
+            }
+        }
+
 
     }
 
@@ -315,19 +624,6 @@
 
     var game = new Game();
 
-
-    // var tank = new Tank();
-    // var bullet = new Bullet();
-    // console.log(bullet.coordXY)
-
-
-
-
-
-
-    // setInterval(() => {
-    //     new Bullet();
-    // }, 300)
 
 
 
