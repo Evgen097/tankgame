@@ -5,8 +5,10 @@
     <title>Tank Game</title>
     <link rel="stylesheet" href="./emoji.css">
     <style>
+        @import url('https://fonts.googleapis.com/css?family=Orbitron');
         body{
-            background-color: beige;
+            background-color: black;
+            font-family: 'Orbitron', sans-serif;
         }
 
         #game{
@@ -14,17 +16,17 @@
         }
 
         #field{
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            margin: 20px  100px 100px 100px;
-            background-color: darkgrey;
+            position: relative;
+            width: 1200px;
+            height: 600px;
+            margin: 80px auto;
+            background-color: black;
             overflow: hidden;
         }
         #tank{
             position: absolute;
-            left: 200px;
-            top: 200px;
+            left: 400px;
+            top: 350px;
             width: 60px;
             height: 60px;
             background-color: dimgray;
@@ -94,9 +96,26 @@
             /*border-radius: 50% 50% 50% 50%;*/
         }
 
+        #title{
+            margin: 10px auto;
+            text-align: center;
+            color: white;
+            font-size: 30px;
+        }
+        #info{
+            margin: 0px auto;
+            margin-bottom: -80px;
+            padding: 20px;
+            text-align: center;
+            background-color: black;
+            color: red;
+        }
+        #score {
+            color: red;
+        }
         #life{
-            position: relative;
-
+            display: inline-block;
+            margin: 5px 0px 0px 40px;
             width: 200px;
             height: 20px;
             background-color: lawngreen;
@@ -104,17 +123,33 @@
             border-radius: 7px 7px 7px 7px;
         }
 
+        #btnstart{
+            position: absolute;
+            left: 0px;
+            top: 70px;
+            width: 100%;
+            height: 200px;
+            background-color: red;
+            border: 3px solid white;
+            border-radius: 1px 1px 1px 1px;
+            text-align: center;
+            line-height: 200px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 
 <body>
 
-<div id="game"> <div>Tank Game </div>
-    <div id="life"></div>Score: <span id="score"></span>
-    <div id="btnstart">Start Game</div>
-
+<div id="game">
+    <div id="title">Tank Game</div>
+    <div id="info"> Score: <span id="score">0</span>  <div id="life"></div> </div>
 
     <div id="field">
+        <div id="btnstart">Start Game</div>
         <div id="tank">
             <div id="tower">
                 <div id="barrel">
@@ -307,9 +342,13 @@
                     left: document.querySelector('#field').getBoundingClientRect().left,
                     top: document.querySelector('#field').getBoundingClientRect().top
                 };
-                this.emojis = ['em-alien', 'em-robot_face', 'em-smiling_imp', 'em-space_invader', 'em-japanese_ogre']
-                this.vx = this.random(1,5);
-                this.vy = this.random(1,6);
+                this.emojis = ['em-alien', 'em-robot_face', 'em-smiling_imp', 'em-space_invader',
+                    'em-japanese_ogre', 'em-imp', 'em-skull', 'em-bat', 'em-boar', 'em-dragon', 'em-flying_saucer', 'em-nauseated_face',
+                    'em-rage', 'em-rocket', 'em-skull', 'em-skull_and_crossbones',
+
+                ]
+                this.vx = this.random(4,8);
+                this.vy = this.random(3,9);
                 this.init();
             }
 
@@ -421,6 +460,7 @@
         }
 
         init(){
+            this.btnStart.style.display = 'block';
             addEventListener("keydown", this.handleKeydown.bind(this));
             addEventListener("keyup", this.handleKeyup.bind(this));
             this.btnStart.addEventListener("click", this.startGame.bind(this));
@@ -441,6 +481,7 @@
             };
 
             if(!this.play) {
+                this.btnStart.style.display = 'none';
                 this.createBuddyes(this.buddyesNumber);
                 this.scores = 0;
                 this.score.innerHTML = this.scores;
@@ -463,8 +504,9 @@
             buddyes.forEach(buddy => {buddy.parentNode.removeChild(buddy);});
             this.buddyes =[];
 
-            this.tank.tank.style.left = '200px';
-            this.tank.tank.style.top = '200px';
+            this.tank.tank.style.left = '400px';
+            this.tank.tank.style.top = '350px';
+            this.btnStart.style.display = 'block';
         }
 
         handleKeydown(e){
